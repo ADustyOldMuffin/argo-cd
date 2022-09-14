@@ -19,6 +19,7 @@ import (
 
 	argoappv1 "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	applister "github.com/argoproj/argo-cd/v2/pkg/client/listers/application/v1alpha1"
+	"github.com/argoproj/argo-cd/v2/util/db"
 	"github.com/argoproj/argo-cd/v2/util/git"
 	"github.com/argoproj/argo-cd/v2/util/healthz"
 	"github.com/argoproj/argo-cd/v2/util/profile"
@@ -211,8 +212,8 @@ func normalizeLabels(prefix string, appLabels []string) []string {
 	return results
 }
 
-func (m *MetricsServer) RegisterClustersInfoSource(ctx context.Context, source HasClustersInfo) {
-	collector := &clusterCollector{infoSource: source}
+func (m *MetricsServer) RegisterClustersInfoSource(ctx context.Context, source HasClustersInfo, argoDB db.ArgoDB) {
+	collector := &clusterCollector{infoSource: source, argoDB: argoDB}
 	go collector.Run(ctx)
 	m.registry.MustRegister(collector)
 }

@@ -705,7 +705,7 @@ func (ctrl *ApplicationController) Run(ctx context.Context, statusProcessors int
 	defer ctrl.appOperationQueue.ShutDown()
 	defer ctrl.projectRefreshQueue.ShutDown()
 
-	ctrl.metricsServer.RegisterClustersInfoSource(ctx, ctrl.stateCache)
+	ctrl.metricsServer.RegisterClustersInfoSource(ctx, ctrl.stateCache, ctrl.db)
 	ctrl.RegisterClusterSecretUpdater(ctx)
 
 	go ctrl.appInformer.Run(ctx.Done())

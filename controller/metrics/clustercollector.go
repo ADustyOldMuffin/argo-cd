@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/argoproj/argo-cd/v2/util/db"
 	"github.com/argoproj/gitops-engine/pkg/cache"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,7 +16,7 @@ const (
 )
 
 var (
-	descClusterDefaultLabels = []string{"server"}
+	descClusterDefaultLabels = []string{"server", "name"}
 
 	descClusterInfo = prometheus.NewDesc(
 		"argocd_cluster_info",
@@ -54,6 +55,7 @@ type HasClustersInfo interface {
 }
 
 type clusterCollector struct {
+	argoDB     db.ArgoDB
 	infoSource HasClustersInfo
 	info       []cache.ClusterInfo
 	lock       sync.Mutex
@@ -89,8 +91,17 @@ func (c *clusterCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *clusterCollector) Collect(ch chan<- prometheus.Metric) {
 
 	now := time.Now()
+	db := c.argoDB
 	for _, c := range c.info {
-		defaultValues := []string{c.Server}
+		cluster, err := db.GetCluster(context.Background(), c.Server)
+		var clusterName string
+		if err != nil {
+			clusterName = ""
+		} else {
+			clusterName = cluster.Name
+		}
+
+		defaultValues := []string{c.Server, clusterName}
 		ch <- prometheus.MustNewConstMetric(descClusterInfo, prometheus.GaugeValue, 1, append(defaultValues, c.K8SVersion)...)
 		ch <- prometheus.MustNewConstMetric(descClusterCacheResources, prometheus.GaugeValue, float64(c.ResourcesCount), defaultValues...)
 		ch <- prometheus.MustNewConstMetric(descClusterAPIs, prometheus.GaugeValue, float64(c.APIsCount), defaultValues...)
